@@ -41,7 +41,7 @@ This is the same security stack used by companies like Shopify, Mercari, and Dig
 | 🌐 **Portfolio** | [humeshdeshmukh.dev](https://github.com/humeshdeshmukh) |
 | 💼 **LinkedIn** | [linkedin.com/in/humeshdeshmukh](https://linkedin.com/in/humeshdeshmukh) |
 | 🐙 **GitHub** | [github.com/humeshdeshmukh](https://github.com/humeshdeshmukh) |
-| 📧 **Email** | <humeshdeshmukh@gmail.com> |
+| 📧 **Email** | <humeshdeshmukh0@gmail.com> |
 
 ---
 
@@ -406,6 +406,7 @@ curl -s http://<minikube-ip>:31900/metrics | grep security_
 ### Why both Kyverno AND OPA Gatekeeper?
 
 They serve complementary roles:
+
 - **Kyverno** is Kubernetes-native — policies are written in YAML, no new language to learn. Ideal for teams that want simple, declarative policies.
 - **OPA Gatekeeper** uses **Rego** — a full policy language that can express complex logic (e.g., cross-resource validation). Used when you need more power than YAML allows.
 
@@ -414,6 +415,7 @@ In a real organization, you'd likely pick one. Having both demonstrates proficie
 ### Why Audit/Dry-run mode instead of Enforce?
 
 In production, you'd gradually promote policies from Audit → Enforce after validating they don't break existing workloads. Starting in Audit mode lets you:
+
 1. See what would fail without blocking anything
 2. Fix violations before flipping the switch
 3. Avoid self-inflicted outages from overly strict policies
@@ -421,6 +423,7 @@ In production, you'd gradually promote policies from Audit → Enforce after val
 ### Why eBPF for Falco instead of the kernel module?
 
 The kernel module requires exact kernel header matching and can cause stability issues. The eBPF driver is:
+
 - Safer (runs in userspace sandbox)
 - More portable across kernel versions
 - Easier to deploy on managed Kubernetes and Minikube
@@ -429,6 +432,7 @@ The kernel module requires exact kernel header matching and can cause stability 
 ### Why a custom Scanner API instead of running Trivy directly?
 
 Wrapping Trivy in an API provides:
+
 - **Programmatic access** for CI/CD integration
 - **Prometheus metrics** for vulnerability tracking over time
 - **Result caching** for dashboard queries

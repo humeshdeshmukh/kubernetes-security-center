@@ -12,6 +12,15 @@ config:
             operator: NotIn
             values:
               - kyverno
+  # Exclude system namespaces from policy enforcement
+  excludeGroups:
+    - system:nodes
+  resourceFilters:
+    - "[Event,*,*]"
+    - "[*,kube-system,*]"
+    - "[*,kube-public,*]"
+    - "[*,kube-node-lease,*]"
+    - "[*,security,kyverno-*]"
 
 # Resource limits for Kyverno controller
 resources:
@@ -29,14 +38,3 @@ metricsConfig:
 
 # Admission controller replicas
 replicaCount: 1
-
-# Exclude system namespaces from policy enforcement
-config:
-  excludeGroups:
-    - system:nodes
-  resourceFilters:
-    - "[Event,*,*]"
-    - "[*,kube-system,*]"
-    - "[*,kube-public,*]"
-    - "[*,kube-node-lease,*]"
-    - "[*,security,kyverno-*]"
