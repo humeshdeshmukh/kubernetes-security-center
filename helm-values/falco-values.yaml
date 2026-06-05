@@ -1,0 +1,53 @@
+# ==============================================================================
+# Falco Helm Values — Kubernetes Security Operations Center
+# ==============================================================================
+
+# Use eBPF driver instead of kernel module (better compatibility with Minikube)
+driver:
+  kind: ebpf
+
+# Enable Falco metrics for Prometheus scraping
+falco:
+  grpc:
+    enabled: true
+  grpc_output:
+    enabled: true
+  json_output: true
+  log_stderr: true
+  log_syslog: false
+  priority: notice
+
+  # Load our custom rules
+  rules_file:
+    - /etc/falco/falco_rules.yaml
+    - /etc/falco/falco_rules.local.yaml
+    - /etc/falco/custom-rules.yaml
+
+# Mount custom rules via ConfigMap
+customRules:
+  custom-rules.yaml: |-
+    # Custom rules are loaded from the falco/custom-rules.yaml file
+    # and injected here via the deploy script as a ConfigMap
+
+# Export metrics on port 8765 for Prometheus
+falcosidekick:
+  enabled: true
+  config:
+    prometheus:
+      extralabels: "source:falco"
+  webui:
+    enabled: false
+
+# Resource limits
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+# Tolerations to run on all nodes
+tolerations:
+  - effect: NoSchedule
+    operator: Exists

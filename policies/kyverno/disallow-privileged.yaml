@@ -1,0 +1,58 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-privileged-containers
+  annotations:
+    policies.kyverno.io/title: Disallow Privileged Containers
+    policies.kyverno.io/category: Pod Security Standards (Baseline)
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/subject: Pod
+    policies.kyverno.io/description: >-
+      Privileged mode disables most security mechanisms and must not be allowed.
+      This policy ensures that the `privileged` flag is not set to `true` in
+      any container's security context.
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: deny-privileged
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - security
+      validate:
+        message: >-
+          Privileged mode is disallowed. The field
+          spec.containers[*].securityContext.privileged must be set to `false`.
+        pattern:
+          spec:
+            containers:
+              - securityContext:
+                  privileged: "false"
+    - name: deny-privileged-initcontainers
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - security
+      validate:
+        message: >-
+          Privileged mode is disallowed for init containers.
+        pattern:
+          spec:
+            =(initContainers):
+              - securityContext:
+                  privileged: "false"

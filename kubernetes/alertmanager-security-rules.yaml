@@ -1,0 +1,150 @@
+# ==============================================================================
+# Security Alerting Rules — PrometheusRule CRDs
+# Kubernetes Security Operations Center
+# ==============================================================================
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: security-soc-alerts
+  namespace: security
+  labels:
+    release: prometheus-operator
+    app: security-soc
+spec:
+  groups:
+    # ------------------------------------------------------------------
+    # Vulnerability Scanning Alerts
+    # ------------------------------------------------------------------
+    - name: security-scanner-alerts
+      rules:
+        - alert: CriticalVulnerabilitiesDetected
+          expr: security_vulnerabilities_found{severity="CRITICAL"} > 0
+          for: 1m
+          labels:
+            severity: critical
+            team: security
+          annotations:
+            summary: "Critical vulnerabilities detected in scanned images"
+            description: >-
+              {{ $value }} CRITICAL vulnerabilities found.
+              Immediate remediation required — upgrade affected packages
+              or switch to patched base images.
+
+        - alert: HighVulnerabilityCountExceeded
+          expr: sum(security_vulnerabilities_found) > 100
+          for: 5m
+          labels:
+            severity: warning
+            team: security
+          annotations:
+            summary: "High total vulnerability count across scanned images"
+            description: >-
+              Total vulnerability count is {{ $value }}.
+              Review and prioritize remediation based on severity.
+
+        - alert: ScanFailureRateHigh
+          expr: >
+            rate(security_scans_total{status="error"}[15m])
+            / rate(security_scans_total[15m]) > 0.3
+          for: 5m
+          labels:
+            severity: warning
+            team: security
+          annotations:
+            summary: "Security scan failure rate exceeds 30%"
+            description: >-
+              More than 30% of security scans are failing.
+              Check Trivy connectivity and scanner pod logs.
+
+    # ------------------------------------------------------------------
+    # Runtime Security Alerts (Falco-based)
+    # ------------------------------------------------------------------
+    - name: falco-runtime-alerts
+      rules:
+        - alert: FalcoCriticalAlert
+          expr: increase(falco_events{priority="Critical"}[5m]) > 0
+          for: 0m
+          labels:
+            severity: critical
+            team: security
+          annotations:
+            summary: "Falco detected a CRITICAL runtime threat"
+            description: >-
+              A critical runtime security event was detected by Falco.
+              This could indicate a reverse shell, crypto mining, or
+              other active compromise. Investigate immediately.
+
+        - alert: FalcoHighAlertRate
+          expr: increase(falco_events[5m]) > 20
+          for: 5m
+          labels:
+            severity: warning
+            team: security
+          annotations:
+            summary: "Falco alert rate is unusually high"
+            description: >-
+              More than 20 Falco alerts in the last 5 minutes.
+              This may indicate an active attack or misconfigured rules.
+
+    # ------------------------------------------------------------------
+    # Policy Compliance Alerts
+    # ------------------------------------------------------------------
+    - name: policy-compliance-alerts
+      rules:
+        - alert: KyvernoPolicyViolationsHigh
+          expr: sum(kyverno_policy_results_total{rule_result="fail"}) > 10
+          for: 10m
+          labels:
+            severity: warning
+            team: security
+          annotations:
+            summary: "Multiple Kyverno policy violations detected"
+            description: >-
+              {{ $value }} Kyverno policy violations detected.
+              Review non-compliant resources with:
+              kubectl get policyreport -A
+
+        - alert: GatekeeperViolationsDetected
+          expr: sum(gatekeeper_violations) > 5
+          for: 10m
+          labels:
+            severity: warning
+            team: security
+          annotations:
+            summary: "OPA Gatekeeper constraint violations detected"
+            description: >-
+              {{ $value }} Gatekeeper violations found during audit.
+              Review with: kubectl get constraints
+
+    # ------------------------------------------------------------------
+    # Scanner Application Health Alerts
+    # ------------------------------------------------------------------
+    - name: scanner-health-alerts
+      rules:
+        - alert: SecurityScannerDown
+          expr: up{job="security-scanner"} == 0
+          for: 2m
+          labels:
+            severity: critical
+            team: security
+          annotations:
+            summary: "Security Scanner API is down"
+            description: >-
+              The security-scanner service has been unreachable for 2 minutes.
+              Check pod status: kubectl get pods -l app.kubernetes.io/name=security-scanner
+
+        - alert: SecurityScannerHighLatency
+          expr: >
+            histogram_quantile(0.95,
+              rate(http_request_duration_seconds_bucket{job="security-scanner"}[5m])
+            ) > 2
+          for: 5m
+          labels:
+            severity: warning
+            team: security
+          annotations:
+            summary: "Security Scanner API latency is high"
+            description: >-
+              p95 latency for the security scanner API is {{ $value }}s.
+              This may indicate resource contention or slow Trivy scans.

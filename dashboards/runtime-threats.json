@@ -1,0 +1,233 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "Runtime threat detection — Falco alerts timeline, threat categories, and recent security events",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Total Falco Alerts (Last 24h)",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 10 },
+              { "color": "red", "value": 50 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(falco_events[24h]))",
+          "legendFormat": "Total Alerts"
+        }
+      ]
+    },
+    {
+      "title": "Critical Alerts",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(falco_events{priority=\"Critical\"}[24h]))",
+          "legendFormat": "Critical"
+        }
+      ]
+    },
+    {
+      "title": "Warning Alerts",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(falco_events{priority=\"Warning\"}[24h]))",
+          "legendFormat": "Warning"
+        }
+      ]
+    },
+    {
+      "title": "Notice Alerts",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "color": "blue", "value": null },
+              { "color": "yellow", "value": 5 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(increase(falco_events{priority=\"Notice\"}[24h]))",
+          "legendFormat": "Notice"
+        }
+      ]
+    },
+    {
+      "title": "Falco Alert Timeline",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 4 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 60,
+            "stacking": { "mode": "normal" },
+            "lineWidth": 1
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Critical" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Warning" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Notice" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "expr": "increase(falco_events{priority=\"Critical\"}[5m])",
+          "legendFormat": "Critical"
+        },
+        {
+          "expr": "increase(falco_events{priority=\"Warning\"}[5m])",
+          "legendFormat": "Warning"
+        },
+        {
+          "expr": "increase(falco_events{priority=\"Notice\"}[5m])",
+          "legendFormat": "Notice"
+        }
+      ]
+    },
+    {
+      "title": "Alerts by Rule Name",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "fillOpacity": 80
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "topk(10, sum by (rule) (increase(falco_events[24h])))",
+          "legendFormat": "{{ rule }}"
+        }
+      ]
+    },
+    {
+      "title": "Threat Category Breakdown",
+      "type": "piechart",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right" },
+        "pieType": "donut",
+        "tooltip": { "mode": "single" }
+      },
+      "targets": [
+        {
+          "expr": "sum by (priority) (increase(falco_events[24h]))",
+          "legendFormat": "{{ priority }}"
+        }
+      ]
+    },
+    {
+      "title": "Alerts by Namespace",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "fillOpacity": 80
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (k8s_ns_name) (increase(falco_events[24h]))",
+          "legendFormat": "{{ k8s_ns_name }}"
+        }
+      ]
+    },
+    {
+      "title": "Alerts by Container Image",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 20 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "fillOpacity": 80
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "topk(10, sum by (container_image_repository) (increase(falco_events[24h])))",
+          "legendFormat": "{{ container_image_repository }}"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["security", "falco", "runtime", "threats", "security-soc"],
+  "templating": { "list": [] },
+  "time": { "from": "now-24h", "to": "now" },
+  "title": "Security SOC — Runtime Threats",
+  "uid": "security-runtime-threats"
+}

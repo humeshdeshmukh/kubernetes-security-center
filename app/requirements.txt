@@ -1,0 +1,11 @@
+# Web Framework
+flask==3.1.1
+gunicorn==23.0.0
+
+# Prometheus Metrics
+prometheus-client==0.22.1
+
+# Testing
+pytest==8.3.5
+pytest-cov==6.1.1
+flake8==7.2.0

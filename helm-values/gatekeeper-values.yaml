@@ -1,0 +1,43 @@
+# ==============================================================================
+# OPA Gatekeeper Helm Values — Kubernetes Security Operations Center
+# ==============================================================================
+
+# Run in dry-run/audit mode by default
+auditInterval: 60
+constraintViolationsLimit: 20
+auditFromCache: false
+
+# Resource limits
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+# Replicas for the admission webhook
+replicas: 1
+
+# Enable audit logging
+audit:
+  replicas: 1
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+# Exempt system namespaces
+exemptNamespaces:
+  - kube-system
+  - kube-public
+  - kube-node-lease
+  - gatekeeper-system
+  - security
+
+# Enable metrics for Prometheus
+metricsBackends:
+  - prometheus

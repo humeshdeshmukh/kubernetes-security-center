@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+venv/
+.venv/
+env/
+
+# Testing
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Trivy
+.trivycache/
+trivy-results/
+*.sarif
+
+# Kubernetes
+kubeconfig
+*.kubeconfig
+
+# Helm
+*.tgz
+charts/
+
+# Docker
+.docker/
+
+# Logs
+*.log

@@ -1,0 +1,243 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "Policy compliance overview — Kyverno and OPA Gatekeeper policy pass/fail rates, violations over time, and compliance scores",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Overall Compliance Score",
+      "type": "gauge",
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "orange", "value": 50 },
+              { "color": "yellow", "value": 75 },
+              { "color": "green", "value": 90 }
+            ]
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "(sum(kyverno_policy_results_total{rule_result=\"pass\"}) / sum(kyverno_policy_results_total)) * 100",
+          "legendFormat": "Compliance %"
+        }
+      ]
+    },
+    {
+      "title": "Kyverno — Policies Passing",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 4, "x": 8, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(kyverno_policy_results_total{rule_result=\"pass\"})",
+          "legendFormat": "Pass"
+        }
+      ]
+    },
+    {
+      "title": "Kyverno — Policies Failing",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 4, "x": 12, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(kyverno_policy_results_total{rule_result=\"fail\"})",
+          "legendFormat": "Fail"
+        }
+      ]
+    },
+    {
+      "title": "OPA Gatekeeper — Total Violations",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 4, "x": 16, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 5 },
+              { "color": "red", "value": 20 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum(gatekeeper_violations)",
+          "legendFormat": "Violations"
+        }
+      ]
+    },
+    {
+      "title": "OPA Gatekeeper — Audit Duration",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 4, "x": 20, "y": 0 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 30 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        }
+      },
+      "targets": [
+        {
+          "expr": "gatekeeper_audit_duration_seconds",
+          "legendFormat": "Audit Duration"
+        }
+      ]
+    },
+    {
+      "title": "Kyverno Policy Results Over Time",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "lineWidth": 2,
+            "stacking": { "mode": "none" }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Pass" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Fail" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Warn" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "expr": "sum by (rule_result) (increase(kyverno_policy_results_total[5m]))",
+          "legendFormat": "{{ rule_result }}"
+        }
+      ]
+    },
+    {
+      "title": "OPA Gatekeeper Violations Over Time",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 50,
+            "lineWidth": 1,
+            "stacking": { "mode": "normal" }
+          },
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "targets": [
+        {
+          "expr": "sum by (constraint_kind) (gatekeeper_violations)",
+          "legendFormat": "{{ constraint_kind }}"
+        }
+      ]
+    },
+    {
+      "title": "Kyverno — Per-Policy Results",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "fillOpacity": 80 }
+        }
+      },
+      "options": {
+        "orientation": "horizontal",
+        "xTickLabelRotation": 0,
+        "stacking": "normal"
+      },
+      "targets": [
+        {
+          "expr": "sum by (policy_name, rule_result) (kyverno_policy_results_total)",
+          "legendFormat": "{{ policy_name }} ({{ rule_result }})"
+        }
+      ]
+    },
+    {
+      "title": "OPA Gatekeeper — Violations by Constraint",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 14 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "fillOpacity": 80 }
+        }
+      },
+      "options": {
+        "orientation": "horizontal",
+        "xTickLabelRotation": 0
+      },
+      "targets": [
+        {
+          "expr": "sum by (constraint_name) (gatekeeper_violations)",
+          "legendFormat": "{{ constraint_name }}"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["security", "kyverno", "opa", "gatekeeper", "compliance", "security-soc"],
+  "templating": { "list": [] },
+  "time": { "from": "now-24h", "to": "now" },
+  "title": "Security SOC — Policy Compliance",
+  "uid": "security-policy-compliance"
+}

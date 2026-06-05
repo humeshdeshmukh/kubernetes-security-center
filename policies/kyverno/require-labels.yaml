@@ -1,0 +1,56 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-labels
+  annotations:
+    policies.kyverno.io/title: Require Labels
+    policies.kyverno.io/category: Best Practices
+    policies.kyverno.io/severity: medium
+    policies.kyverno.io/subject: Pod, Label
+    policies.kyverno.io/description: >-
+      Labels are fundamental to organizing and selecting Kubernetes resources.
+      This policy requires that all Pods have the `app.kubernetes.io/name`
+      and `team` labels set to ensure proper ownership and discoverability.
+spec:
+  validationFailureAction: Audit
+  background: true
+  rules:
+    - name: require-app-name-label
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kube-public
+      validate:
+        message: >-
+          The label `app.kubernetes.io/name` is required on all Pods.
+        pattern:
+          metadata:
+            labels:
+              app.kubernetes.io/name: "?*"
+    - name: require-team-label
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      exclude:
+        any:
+          - resources:
+              namespaces:
+                - kube-system
+                - kube-public
+                - security
+      validate:
+        message: >-
+          The label `team` is required on all Pods for ownership tracking.
+        pattern:
+          metadata:
+            labels:
+              team: "?*"

@@ -1,0 +1,42 @@
+# ==============================================================================
+# Kyverno Helm Values — Kubernetes Security Operations Center
+# ==============================================================================
+
+# Run in Audit mode by default (log violations but don't block)
+# Switch to "Enforce" when ready for production
+config:
+  webhooks:
+    - objectSelector:
+        matchExpressions:
+          - key: app.kubernetes.io/part-of
+            operator: NotIn
+            values:
+              - kyverno
+
+# Resource limits for Kyverno controller
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+
+# Enable metrics for Prometheus
+metricsConfig:
+  metricsExposure:
+    enabled: true
+
+# Admission controller replicas
+replicaCount: 1
+
+# Exclude system namespaces from policy enforcement
+config:
+  excludeGroups:
+    - system:nodes
+  resourceFilters:
+    - "[Event,*,*]"
+    - "[*,kube-system,*]"
+    - "[*,kube-public,*]"
+    - "[*,kube-node-lease,*]"
+    - "[*,security,kyverno-*]"

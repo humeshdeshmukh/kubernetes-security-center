@@ -1,0 +1,152 @@
+# ==============================================================================
+# Falco Custom Security Rules — Kubernetes Security Operations Center
+# ==============================================================================
+# These rules detect the three critical runtime threats:
+#   1. Reverse Shell — outbound shell connections
+#   2. Privilege Escalation — setuid/setgid or capability changes
+#   3. Crypto Mining — known miner processes and pool connections
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Rule 1: Reverse Shell Detection
+# Triggers when a shell process (bash, sh, zsh, etc.) opens an outbound
+# network connection — a classic indicator of reverse shell activity.
+# ------------------------------------------------------------------------------
+- rule: Reverse Shell Detected
+  desc: >
+    Detects a shell process establishing an outbound network connection,
+    which is a strong indicator of reverse shell activity. Legitimate
+    applications should not spawn shells that connect to external hosts.
+  condition: >
+    spawned_process
+    and proc.name in (bash, sh, zsh, dash, csh, ksh, fish)
+    and (fd.type = ipv4 or fd.type = ipv6)
+    and fd.direction = out
+    and not (fd.sip in (rfc_1918_addresses))
+    and container
+    and not proc.pname in (sshd, sudo, su, cron, crond)
+  output: >
+    CRITICAL: Reverse shell detected in container
+    (user=%user.name command=%proc.cmdline connection=%fd.name
+    container_id=%container.id container_name=%container.name
+    image=%container.image.repository:%container.image.tag
+    namespace=%k8s.ns.name pod=%k8s.pod.name)
+  priority: CRITICAL
+  tags: [network, shell, mitre_execution, mitre_command_and_control, reverse_shell]
+
+# ------------------------------------------------------------------------------
+# Rule 2: Privilege Escalation Detection
+# Triggers on setuid/setgid system calls, unexpected capability changes,
+# or processes running as root that were spawned by non-root parents.
+# ------------------------------------------------------------------------------
+- rule: Privilege Escalation via setuid
+  desc: >
+    Detects processes attempting privilege escalation through setuid or
+    setgid system calls inside containers. This is a common technique
+    used by attackers after gaining initial access to escalate to root.
+  condition: >
+    evt.type in (setuid, setgid, setresuid, setresgid)
+    and container
+    and not proc.name in (sudo, su, passwd, chsh, crontab, ping, mount, umount)
+    and not user.name = root
+  output: >
+    WARNING: Privilege escalation attempt detected
+    (user=%user.name command=%proc.cmdline syscall=%evt.type
+    container_id=%container.id container_name=%container.name
+    image=%container.image.repository:%container.image.tag
+    namespace=%k8s.ns.name pod=%k8s.pod.name)
+  priority: WARNING
+  tags: [process, mitre_privilege_escalation, setuid]
+
+- rule: Container Running as Root
+  desc: >
+    Detects a new process spawned as root inside a container that should
+    be running as a non-root user. Containers running as root significantly
+    increase the blast radius of container escapes.
+  condition: >
+    spawned_process
+    and container
+    and user.uid = 0
+    and not proc.name in (pause, tini, dumb-init)
+    and not k8s.ns.name in (kube-system, security)
+  output: >
+    NOTICE: Container process running as root
+    (user=%user.name command=%proc.cmdline
+    container_id=%container.id container_name=%container.name
+    image=%container.image.repository:%container.image.tag
+    namespace=%k8s.ns.name pod=%k8s.pod.name)
+  priority: NOTICE
+  tags: [process, mitre_privilege_escalation, root_container]
+
+# ------------------------------------------------------------------------------
+# Rule 3: Crypto Mining Detection
+# Detects known crypto miner processes by name, command-line patterns,
+# and connections to known mining pool domains/ports.
+# ------------------------------------------------------------------------------
+- rule: Crypto Mining Process Detected
+  desc: >
+    Detects known cryptocurrency mining processes running inside containers.
+    Crypto mining in production environments is a strong indicator of
+    compromise — attackers often deploy miners after gaining cluster access.
+  condition: >
+    spawned_process
+    and container
+    and (
+      proc.name in (xmrig, minerd, minergate, cpuminer, ethminer, cgminer, bfgminer, nbminer, t-rex, gminer, lolminer, phoenixminer)
+      or proc.cmdline contains "stratum+tcp"
+      or proc.cmdline contains "stratum+ssl"
+      or proc.cmdline contains "mining.pool"
+      or proc.cmdline contains "nicehash"
+      or proc.cmdline contains "crypto-pool"
+      or proc.cmdline contains "xmrpool"
+      or proc.cmdline contains "moneroocean"
+    )
+  output: >
+    CRITICAL: Cryptocurrency mining process detected
+    (user=%user.name command=%proc.cmdline
+    container_id=%container.id container_name=%container.name
+    image=%container.image.repository:%container.image.tag
+    namespace=%k8s.ns.name pod=%k8s.pod.name)
+  priority: CRITICAL
+  tags: [process, mitre_execution, mitre_resource_hijacking, crypto_mining]
+
+- rule: Outbound Connection to Mining Pool
+  desc: >
+    Detects outbound network connections on ports commonly used by
+    cryptocurrency mining pools (3333, 4444, 5555, 8888, 9999, 14444).
+  condition: >
+    outbound
+    and container
+    and fd.sport in (3333, 4444, 5555, 8888, 9999, 14444, 14433)
+    and not k8s.ns.name in (kube-system)
+  output: >
+    WARNING: Outbound connection to potential mining pool port
+    (user=%user.name command=%proc.cmdline connection=%fd.name port=%fd.sport
+    container_id=%container.id container_name=%container.name
+    namespace=%k8s.ns.name pod=%k8s.pod.name)
+  priority: WARNING
+  tags: [network, mitre_command_and_control, crypto_mining]
+
+# ------------------------------------------------------------------------------
+# Supplementary Rule: Suspicious Package Installation
+# Detects apt/yum/apk package manager invocations in running containers,
+# which often indicate post-compromise tooling installation.
+# ------------------------------------------------------------------------------
+- rule: Package Manager in Container
+  desc: >
+    Detects package manager execution inside a running container.
+    Production containers should be immutable — installing packages
+    at runtime suggests either a compromised container or bad practice.
+  condition: >
+    spawned_process
+    and container
+    and proc.name in (apt, apt-get, yum, dnf, apk, pip, pip3, npm, gem)
+    and not k8s.ns.name in (kube-system)
+  output: >
+    NOTICE: Package manager invoked inside container
+    (user=%user.name command=%proc.cmdline
+    container_id=%container.id container_name=%container.name
+    image=%container.image.repository:%container.image.tag
+    namespace=%k8s.ns.name pod=%k8s.pod.name)
+  priority: NOTICE
+  tags: [process, mitre_execution, software_installation]

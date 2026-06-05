@@ -1,0 +1,24 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRequiredLabels
+metadata:
+  name: require-app-and-owner-labels
+  annotations:
+    description: >-
+      Enforces that all Deployments in non-system namespaces have
+      'app' and 'owner' labels for resource tracking and accountability.
+spec:
+  enforcementAction: dryrun
+  match:
+    kinds:
+      - apiGroups: ["apps"]
+        kinds: ["Deployment"]
+    excludedNamespaces:
+      - kube-system
+      - kube-public
+      - kube-node-lease
+      - gatekeeper-system
+      - security
+  parameters:
+    labels:
+      - "app"
+      - "owner"

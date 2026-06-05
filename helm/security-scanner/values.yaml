@@ -1,0 +1,80 @@
+# ==============================================================================
+# Security Scanner Helm Values
+# ==============================================================================
+
+replicaCount: 2
+
+image:
+  repository: security-scanner
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 80
+  targetPort: 5000
+  nodePort: 31900
+  name: http
+
+# Resource limits for the scanner pods
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+# Security-hardened container settings
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+# Pod-level security context
+podSecurityContext:
+  fsGroup: 10001
+
+# Liveness and readiness probes
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 15
+  periodSeconds: 30
+  timeoutSeconds: 5
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 3
+
+# Environment variables
+env:
+  LOG_LEVEL: INFO
+  PORT: "5000"
+
+# Labels applied to all resources
+labels:
+  app.kubernetes.io/name: security-scanner
+  app.kubernetes.io/part-of: security-soc
+  app.kubernetes.io/component: scanner
+  team: security
+
+# ServiceMonitor for Prometheus auto-discovery
+serviceMonitor:
+  enabled: true
+  interval: 30s
+  path: /metrics
+
+# ServiceAccount with RBAC for cluster scanning
+serviceAccount:
+  create: true
+  name: security-scanner

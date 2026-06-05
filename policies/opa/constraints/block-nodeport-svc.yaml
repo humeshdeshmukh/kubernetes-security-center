@@ -1,0 +1,24 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sBlockNodePort
+metadata:
+  name: block-nodeport-in-production
+  annotations:
+    description: >-
+      Blocks NodePort service creation in production namespaces.
+      NodePort services expose ports on every node (30000-32767) and
+      bypass network policies. Only allowed in dev/default namespaces
+      for Minikube local development.
+spec:
+  enforcementAction: dryrun
+  match:
+    kinds:
+      - apiGroups: [""]
+        kinds: ["Service"]
+    excludedNamespaces:
+      - kube-system
+      - kube-public
+      - gatekeeper-system
+  parameters:
+    allowedNamespaces:
+      - default
+      - security

@@ -1,0 +1,39 @@
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8sblocknodeport
+  annotations:
+    description: >-
+      Blocks creation of Services with type NodePort in specified namespaces.
+      NodePort services expose ports on every cluster node and should be
+      restricted in production environments for security reasons.
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sBlockNodePort
+      validation:
+        openAPIV3Schema:
+          type: object
+          properties:
+            allowedNamespaces:
+              type: array
+              description: Namespaces where NodePort services ARE allowed.
+              items:
+                type: string
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8sblocknodeport
+
+        violation[{"msg": msg}] {
+          input.review.object.spec.type == "NodePort"
+          namespace := input.review.object.metadata.namespace
+          not is_allowed_namespace(namespace)
+          msg := sprintf("NodePort services are not allowed in namespace '%v'. Use ClusterIP or LoadBalancer instead.", [namespace])
+        }
+
+        is_allowed_namespace(ns) {
+          allowed := input.parameters.allowedNamespaces[_]
+          ns == allowed
+        }
