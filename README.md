@@ -225,6 +225,16 @@ chmod +x deploy-security-soc.sh
 ./deploy-security-soc.sh
 ```
 
+### One-Command Teardown
+
+To cleanly stop all running services, delete all custom policies/constraints, clean up admission webhooks (preventing cluster lockups), and remove the namespace:
+
+```bash
+chmod +x stop.sh
+./stop.sh
+```
+
+
 ### Manual Step-by-Step
 
 ```bash
